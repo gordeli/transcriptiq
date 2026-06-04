@@ -45,9 +45,9 @@ dev = [
 transcriptiq = "transcriptiq.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/igordeliy/transcriptiq"
-Repository = "https://github.com/igordeliy/transcriptiq"
-Issues = "https://github.com/igordeliy/transcriptiq/issues"
+Homepage = "https://github.com/gordeli/transcriptiq"
+Repository = "https://github.com/gordeli/transcriptiq"
+Issues = "https://github.com/gordeli/transcriptiq/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/transcriptiq"]
