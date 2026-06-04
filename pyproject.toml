@@ -1,0 +1,56 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "transcriptiq"
+version = "0.1.0"
+description = "Academic audio transcription powered by OpenAI Whisper — for interviews, focus groups, and lectures."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Ivan Gordeliy", email = "ivan.gordeliy@edhec.edu" }]
+keywords = [
+    "transcription",
+    "whisper",
+    "speech-to-text",
+    "qualitative-research",
+    "interviews",
+    "focus-groups",
+    "academic",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = [
+    "openai-whisper>=20231117",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+]
+
+[project.scripts]
+transcriptiq = "transcriptiq.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/igordeliy/transcriptiq"
+Repository = "https://github.com/igordeliy/transcriptiq"
+Issues = "https://github.com/igordeliy/transcriptiq/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/transcriptiq"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
