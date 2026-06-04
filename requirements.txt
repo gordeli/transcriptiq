@@ -1,0 +1,5 @@
+# Dependencies for the Streamlit web app (used by Streamlit Community Cloud
+# and Hugging Face Spaces). Installs the transcriptiq package from this repo,
+# which pulls in openai-whisper.
+streamlit>=1.30
+.

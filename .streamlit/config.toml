@@ -1,0 +1,7 @@
+# Streamlit configuration.
+# Raise the upload cap so longer recordings can be transcribed (in MB).
+[server]
+maxUploadSize = 1024
+
+[theme]
+primaryColor = "#4F8BF9"
