@@ -31,6 +31,17 @@ Thumbs.db
 # Whisper model cache (downloaded at runtime)
 *.pt
 
+# Desktop build artifacts
+build_assets/
+installer_output/
+dmg_stage/
+*.dmg
+Transcriptiq-Setup.exe
+
+# Streamlit run logs
+st_out.log
+st_err.log
+
 # Local audio & generated transcripts (don't commit research data)
 *.mp3
 *.wav

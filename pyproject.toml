@@ -44,6 +44,9 @@ dev = [
 [project.scripts]
 transcriptiq = "transcriptiq.cli:main"
 
+[project.gui-scripts]
+transcriptiq-gui = "transcriptiq.gui:main"
+
 [project.urls]
 Homepage = "https://github.com/gordeli/transcriptiq"
 Repository = "https://github.com/gordeli/transcriptiq"

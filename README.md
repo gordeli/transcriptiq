@@ -134,6 +134,37 @@ with its segment time range:
 
 ---
 
+## Web app (Streamlit)
+
+A browser UI for uploading audio and downloading transcripts — no command line
+needed.
+
+```bash
+streamlit run streamlit_app.py
+```
+
+It deploys as-is to **Streamlit Community Cloud** (point it at this repo, main
+file `streamlit_app.py`) or Hugging Face Spaces. The bundled `packages.txt`
+installs ffmpeg and `requirements.txt` installs the package. Note: free hosting
+tiers are memory-limited, so prefer the `tiny`/`base` models there.
+
+## Desktop app (Mac & Windows)
+
+A standalone tkinter app — pick files or a folder, choose a model, transcribe.
+Launch the installed version with `transcriptiq-gui`, or run from source with
+`python -m transcriptiq.gui`.
+
+Two ways to install it, both documented step by step in
+[`installers/README.md`](installers/README.md):
+
+- **Slim installer** — a small script that sets up a Python environment and the
+  package on first run (`installers/slim/install-windows.ps1` /
+  `install-macos.sh`).
+- **Bundled installers** — self-contained, offline-ready `.exe` / `.dmg` built
+  automatically by GitHub Actions (bundles ffmpeg + the `base.en` model). Run
+  the **Build desktop installers** workflow, or push a `v*` tag to attach them
+  to a Release.
+
 ## Development
 
 ```bash

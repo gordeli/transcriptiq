@@ -1,0 +1,116 @@
+name: Build desktop installers
+
+# Build standalone desktop apps for Windows and macOS. Each build bundles a
+# standalone ffmpeg and the base.en Whisper model, so the app works offline.
+#
+# Trigger manually (Actions tab -> Run workflow) or by pushing a v* tag, which
+# also attaches the installers to a GitHub Release.
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.label }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            label: Windows
+          - os: macos-13          # Intel
+            label: macOS-Intel
+          - os: macos-14          # Apple Silicon
+            label: macOS-AppleSilicon
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up ffmpeg
+        uses: FedericoCarboni/setup-ffmpeg@v3
+        id: setup-ffmpeg
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install .
+
+      - name: Stage build assets (model + ffmpeg)
+        shell: python
+        run: |
+          import os, shutil, whisper
+          os.makedirs("build_assets/models", exist_ok=True)
+          os.makedirs("build_assets/bin", exist_ok=True)
+          # Download the bundled model directly into the assets folder.
+          whisper.load_model("base.en", download_root="build_assets/models")
+          # Copy the ffmpeg binary that setup-ffmpeg put on PATH.
+          ffmpeg = shutil.which("ffmpeg")
+          assert ffmpeg, "ffmpeg not found on PATH"
+          shutil.copy(ffmpeg, "build_assets/bin")
+          print("Staged model and ffmpeg from", ffmpeg)
+
+      - name: Build app with PyInstaller
+        run: pyinstaller --noconfirm installers/pyinstaller/transcriptiq.spec
+
+      # --- Windows: wrap the one-folder build in an Inno Setup installer -----
+      - name: Build Windows installer (Inno Setup)
+        if: runner.os == 'Windows'
+        run: |
+          choco install innosetup --no-progress -y
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installers\pyinstaller\installer.iss
+        shell: pwsh
+
+      - name: Upload Windows installer
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Transcriptiq-${{ matrix.label }}-Setup
+          path: installers/pyinstaller/installer_output/Transcriptiq-Setup.exe
+
+      # --- macOS: package the .app into a DMG --------------------------------
+      - name: Build macOS DMG
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p dmg_stage
+          cp -R "dist/Transcriptiq.app" dmg_stage/
+          ln -s /Applications dmg_stage/Applications
+          hdiutil create -volname "Transcriptiq" -srcfolder dmg_stage \
+            -ov -format UDZO "Transcriptiq-${{ matrix.label }}.dmg"
+
+      - name: Upload macOS DMG
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Transcriptiq-${{ matrix.label }}
+          path: Transcriptiq-${{ matrix.label }}.dmg
+
+  # Attach all installers to a GitHub Release when triggered by a tag.
+  release:
+    name: Publish release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist-artifacts
+
+      - name: Create / update the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist-artifacts/**/*
+          generate_release_notes: true
