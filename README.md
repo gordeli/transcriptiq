@@ -1,6 +1,13 @@
 # Transcriptiq
 
+[![Live demo](https://img.shields.io/badge/Live%20demo-Streamlit-FF4B4B?logo=streamlit&logoColor=white)](https://transcriptiq-app.streamlit.app/)
+[![Latest release](https://img.shields.io/github/v/release/gordeli/transcriptiq)](https://github.com/gordeli/transcriptiq/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 **Academic audio transcription powered by [OpenAI Whisper](https://github.com/openai/whisper).**
+
+▶️ **Try it in your browser:** [transcriptiq-app.streamlit.app](https://transcriptiq-app.streamlit.app/) ·
+⬇️ **Desktop apps:** [latest release](https://github.com/gordeli/transcriptiq/releases/latest)
 
 Transcriptiq turns research audio — interviews, focus groups, lectures, podcasts —
 into clean text transcripts. Run it on a single recording or point it at a whole
