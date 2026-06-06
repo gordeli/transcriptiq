@@ -59,8 +59,12 @@ runner). Download size is larger (~1–3 GB depending on platform).
 2. Go to the repo's **Actions** tab → **Build desktop installers** →
    **Run workflow** (the `workflow_dispatch` trigger). The matrix builds:
    - **Windows** → `Transcriptiq-Setup.exe` (Inno Setup installer),
-   - **macOS Intel** (`macos-13`) → `Transcriptiq-macOS-Intel.dmg`,
    - **macOS Apple Silicon** (`macos-14`) → `Transcriptiq-macOS-AppleSilicon.dmg`.
+
+   > Intel Macs aren't built by default — GitHub's Intel `macos-13` runners are
+   > being retired and were unavailable. The Apple Silicon `.dmg` runs on Intel
+   > Macs too if Rosetta 2 is installed; to build a native Intel binary, add
+   > `- os: macos-13` back to the matrix.
 3. When the run finishes, download the installers from the run's **Artifacts**.
 4. To publish them for end users, push a version tag — the same workflow then
    attaches all three installers to a **GitHub Release**:

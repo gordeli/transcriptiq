@@ -18,15 +18,14 @@ jobs:
   build:
     name: Build (${{ matrix.label }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: windows-latest
             label: Windows
-          - os: macos-13          # Intel
-            label: macOS-Intel
-          - os: macos-14          # Apple Silicon
+          - os: macos-14          # Apple Silicon (arm64)
             label: macOS-AppleSilicon
 
     steps:
@@ -38,29 +37,26 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Set up ffmpeg
-        uses: FedericoCarboni/setup-ffmpeg@v3
-        id: setup-ffmpeg
-
       - name: Install build dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pyinstaller
+          pip install pyinstaller imageio-ffmpeg
           pip install .
 
       - name: Stage build assets (model + ffmpeg)
         shell: python
         run: |
-          import os, shutil, whisper
+          import os, shutil, whisper, imageio_ffmpeg
           os.makedirs("build_assets/models", exist_ok=True)
           os.makedirs("build_assets/bin", exist_ok=True)
           # Download the bundled model directly into the assets folder.
           whisper.load_model("base.en", download_root="build_assets/models")
-          # Copy the ffmpeg binary that setup-ffmpeg put on PATH.
-          ffmpeg = shutil.which("ffmpeg")
-          assert ffmpeg, "ffmpeg not found on PATH"
-          shutil.copy(ffmpeg, "build_assets/bin")
-          print("Staged model and ffmpeg from", ffmpeg)
+          # Use imageio-ffmpeg's bundled static ffmpeg (cross-platform, incl.
+          # macOS arm64). Copy it in under the plain name Whisper expects.
+          src = imageio_ffmpeg.get_ffmpeg_exe()
+          dst = os.path.join("build_assets", "bin", "ffmpeg" + (".exe" if os.name == "nt" else ""))
+          shutil.copy(src, dst)
+          print("Staged model and ffmpeg from", src)
 
       - name: Build app with PyInstaller
         run: pyinstaller --noconfirm installers/pyinstaller/transcriptiq.spec

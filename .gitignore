@@ -49,3 +49,6 @@ st_err.log
 *.flac
 *.mp4
 *_transcribed.txt
+
+# Local Claude Code harness files
+.claude/

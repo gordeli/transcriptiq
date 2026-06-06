@@ -160,10 +160,10 @@ Two ways to install it, both documented step by step in
 - **Slim installer** — a small script that sets up a Python environment and the
   package on first run (`installers/slim/install-windows.ps1` /
   `install-macos.sh`).
-- **Bundled installers** — self-contained, offline-ready `.exe` / `.dmg` built
-  automatically by GitHub Actions (bundles ffmpeg + the `base.en` model). Run
-  the **Build desktop installers** workflow, or push a `v*` tag to attach them
-  to a Release.
+- **Bundled installers** — self-contained, offline-ready `.exe` (Windows) and
+  `.dmg` (macOS Apple Silicon) built automatically by GitHub Actions (bundles a
+  static ffmpeg + the `base.en` model). Run the **Build desktop installers**
+  workflow, or push a `v*` tag to attach them to a Release.
 
 ## Development
 

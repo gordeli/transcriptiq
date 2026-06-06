@@ -20,6 +20,11 @@ from PyInstaller.utils.hooks import collect_all
 # SPECPATH is injected by PyInstaller; entry.py lives next to this spec.
 entry_script = os.path.join(SPECPATH, "entry.py")
 
+# Build assets are staged at the repo root (two levels up from this spec).
+# PyInstaller resolves relative data paths against SPECPATH, so anchor these
+# to an absolute repo-root path to avoid "unable to find" errors.
+REPO_ROOT = os.path.abspath(os.path.join(SPECPATH, os.pardir, os.pardir))
+
 datas = []
 binaries = []
 hiddenimports = []
@@ -33,12 +38,12 @@ for pkg in ("whisper", "tiktoken", "tiktoken_ext", "torch"):
     hiddenimports += pkg_hidden
 
 # Bundled Whisper model (works offline out of the box).
-models_dir = os.path.join("build_assets", "models")
+models_dir = os.path.join(REPO_ROOT, "build_assets", "models")
 if os.path.isdir(models_dir):
     datas.append((models_dir, "models"))
 
 # Bundled ffmpeg binary, placed at the bundle root so it lands on PATH at runtime.
-bin_dir = os.path.join("build_assets", "bin")
+bin_dir = os.path.join(REPO_ROOT, "build_assets", "bin")
 if os.path.isdir(bin_dir):
     datas.append((bin_dir, "."))
 
