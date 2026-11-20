@@ -113,6 +113,9 @@ class Transcriber:
             raise FileNotFoundError(f"Audio file not found: {path}")
 
         self._log(f"Transcribing: {path.name}")
+        # Half precision only helps on CUDA; on CPU (incl. Apple Silicon) Whisper
+        # would warn and fall back to fp32 anyway.
+        whisper_kwargs.setdefault("fp16", self.device == "cuda")
         start = time.time()
         raw = self.model.transcribe(str(path), language=language, **whisper_kwargs)
         elapsed = time.time() - start

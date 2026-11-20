@@ -169,7 +169,7 @@ Two ways to install it, both documented step by step in
   `install-macos.sh`).
 - **Bundled installers** — self-contained, offline-ready `.exe` (Windows) and
   `.dmg` (macOS Apple Silicon) built automatically by GitHub Actions (bundles a
-  static ffmpeg + the `base.en` model). Run the **Build desktop installers**
+  static ffmpeg + the multilingual `small` model — English + Hindi). Run the **Build desktop installers**
   workflow, or push a `v*` tag to attach them to a Release.
 
 ## Development

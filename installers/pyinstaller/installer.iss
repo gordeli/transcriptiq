@@ -3,7 +3,7 @@
 ; Expects the PyInstaller one-folder build at dist\Transcriptiq\.
 
 #define MyAppName "Transcriptiq"
-#define MyAppVersion "0.1.0"
+#define MyAppVersion "0.2.0"
 #define MyAppPublisher "Ivan Gordeliy"
 #define MyAppURL "https://github.com/gordeli/transcriptiq"
 #define MyAppExeName "Transcriptiq.exe"

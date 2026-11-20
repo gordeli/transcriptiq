@@ -49,7 +49,7 @@ locally. Whisper models download the first time each is used.
 ## Option B — Bundled installers (self-contained, built by CI)
 
 These are full one-click installers that bundle Python, PyTorch, Whisper, a
-standalone **ffmpeg**, and the **base.en** model — so they work offline with no
+standalone **ffmpeg**, and the multilingual **small** model (English + Hindi) — so they work offline with no
 prerequisites. They're built automatically by GitHub Actions on real Windows and
 macOS runners (PyInstaller can't cross-compile, so each OS is built on its own
 runner). Download size is larger (~1–3 GB depending on platform).
@@ -75,7 +75,7 @@ runner). Download size is larger (~1–3 GB depending on platform).
 
 ### What the build does (for reference)
 - Sets up Python 3.11 and ffmpeg on the runner.
-- Downloads the `base.en` model into `build_assets/models/` and copies the
+- Downloads the multilingual `small` model into `build_assets/models/` and copies the
   `ffmpeg` binary into `build_assets/bin/`.
 - Runs PyInstaller against
   [`pyinstaller/transcriptiq.spec`](pyinstaller/transcriptiq.spec), which
@@ -103,7 +103,7 @@ You can run the PyInstaller build yourself on your own machine:
 ```bash
 pip install pyinstaller .
 # stage assets the spec expects:
-python -c "import whisper; whisper.load_model('base.en', download_root='build_assets/models')"
+python -c "import whisper; whisper.load_model('small', download_root='build_assets/models')"
 # copy an ffmpeg binary into build_assets/bin/ (platform-specific)
 pyinstaller --noconfirm installers/pyinstaller/transcriptiq.spec
 # -> dist/Transcriptiq/ (Windows/Linux) or dist/Transcriptiq.app (macOS)

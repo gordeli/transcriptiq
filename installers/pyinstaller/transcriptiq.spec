@@ -6,7 +6,8 @@ Run from the repository root:
     pyinstaller installers/pyinstaller/transcriptiq.spec
 
 Expects two build assets (prepared by the CI workflow before this runs):
-  * build_assets/models/base.en.pt   - the bundled Whisper model
+  * build_assets/models/small.pt      - the bundled multilingual Whisper model
+                                       (English + Hindi)
   * build_assets/bin/ffmpeg[.exe]    - a standalone ffmpeg binary
 
 Produces a one-folder app under dist/Transcriptiq (and Transcriptiq.app on macOS).
@@ -90,7 +91,7 @@ if sys.platform == "darwin":
         icon=None,
         bundle_identifier="com.gordeli.transcriptiq",
         info_plist={
-            "CFBundleShortVersionString": "0.1.0",
+            "CFBundleShortVersionString": "0.2.0",
             "NSHighResolutionCapable": True,
             "NSMicrophoneUsageDescription": "Transcriptiq processes the audio files you select.",
         },

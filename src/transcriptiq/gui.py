@@ -20,19 +20,30 @@ from pathlib import Path
 from typing import Optional
 
 from . import __version__
-from .transcriber import AUDIO_EXTENSIONS, DEFAULT_MODEL, Transcriber
+from .languages import LANGUAGE_LABELS, is_english_only_model, language_kwargs
+from .transcriber import AUDIO_EXTENSIONS, Transcriber
 
+#: Multilingual models first: they handle Hindi as well as English.
 MODEL_CHOICES = [
-    "tiny.en",
-    "tiny",
-    "base.en",
-    "base",
-    "small.en",
     "small",
-    "medium.en",
     "medium",
+    "base",
+    "tiny",
     "large",
+    "turbo",
+    "small.en",
+    "base.en",
+    "medium.en",
+    "tiny.en",
 ]
+
+#: Model the desktop app uses when nothing is bundled (multilingual).
+GUI_DEFAULT_MODEL = "small"
+
+MODEL_HINT = (
+    "small: good default, works offline (bundled) · medium: better for Hindi, "
+    "~1.5 GB one-time download, ~3x slower · *.en: English only"
+)
 
 
 def _bundle_base() -> Optional[Path]:
@@ -53,6 +64,66 @@ def bundled_models_dir() -> Optional[str]:
     if base is not None and (base / "models").is_dir():
         return str(base / "models")
     return None
+
+
+def user_models_dir() -> Path:
+    """A writable per-user folder for models downloaded by the app.
+
+    The app bundle itself is read-only (and signed on macOS), so models chosen
+    in the GUI that are not bundled are downloaded here instead.
+    """
+    if sys.platform == "darwin":
+        base = Path.home() / "Library" / "Application Support" / "Transcriptiq"
+    elif os.name == "nt":
+        base = Path(os.environ.get("LOCALAPPDATA", Path.home())) / "Transcriptiq"
+    else:
+        base = Path.home() / ".cache" / "transcriptiq"
+    return base / "models"
+
+
+def _model_filename(model: str) -> str:
+    """Checkpoint file name Whisper uses for ``model`` (e.g. ``small.pt``)."""
+    try:
+        import whisper
+
+        url = whisper._MODELS.get(model)  # type: ignore[attr-defined]
+        if url:
+            return os.path.basename(url)
+    except Exception:
+        pass
+    return f"{model}.pt"
+
+
+def model_download_root(model: str) -> Optional[str]:
+    """Where Whisper should load ``model`` from.
+
+    Uses the bundled models folder when the checkpoint is bundled; otherwise
+    the per-user folder when running as a frozen app; otherwise Whisper's own
+    default cache (``None``).
+    """
+    bundled = bundled_models_dir()
+    if bundled and (Path(bundled) / _model_filename(model)).exists():
+        return bundled
+    if _bundle_base() is not None:
+        target = user_models_dir()
+        target.mkdir(parents=True, exist_ok=True)
+        return str(target)
+    return None
+
+
+def can_translate(model: str) -> bool:
+    """Whisper's English-only and turbo checkpoints cannot translate."""
+    return not (model.endswith(".en") or model == "turbo")
+
+
+def default_gui_model() -> str:
+    """The bundled model if there is one, otherwise ``GUI_DEFAULT_MODEL``."""
+    bundled = bundled_models_dir()
+    if bundled:
+        for name in MODEL_CHOICES:
+            if (Path(bundled) / _model_filename(name)).exists():
+                return name
+    return GUI_DEFAULT_MODEL
 
 
 def prepare_frozen_runtime() -> None:
@@ -111,7 +182,7 @@ class TranscriptiqApp:
         ).pack(side="left")
         ttk.Label(
             header,
-            text="Audio → text for interviews, focus groups & lectures",
+            text="Audio → text for interviews · English & हिन्दी",
             foreground="#666",
         ).pack(side="left", padx=12)
 
@@ -136,29 +207,41 @@ class TranscriptiqApp:
         grid = ttk.Frame(opts)
         grid.pack(fill="x", **pad)
 
-        ttk.Label(grid, text="Model:").grid(row=0, column=0, sticky="w")
-        self.model_var = tk.StringVar(value=DEFAULT_MODEL)
+        ttk.Label(grid, text="Language:").grid(row=0, column=0, sticky="w")
+        self.lang_var = tk.StringVar(value=LANGUAGE_LABELS[0])
+        ttk.Combobox(
+            grid,
+            textvariable=self.lang_var,
+            values=LANGUAGE_LABELS,
+            state="readonly",
+            width=30,
+        ).grid(row=0, column=1, sticky="w", padx=6)
+
+        ttk.Label(grid, text="Model:").grid(row=0, column=2, sticky="w", padx=(16, 0))
+        self.model_var = tk.StringVar(value=default_gui_model())
         ttk.Combobox(
             grid,
             textvariable=self.model_var,
             values=MODEL_CHOICES,
             state="readonly",
-            width=12,
-        ).grid(row=0, column=1, sticky="w", padx=6)
+            width=10,
+        ).grid(row=0, column=3, sticky="w", padx=6)
 
-        ttk.Label(grid, text="Language:").grid(row=0, column=2, sticky="w", padx=(16, 0))
-        self.lang_var = tk.StringVar(value="")
-        ttk.Entry(grid, textvariable=self.lang_var, width=8).grid(
-            row=0, column=3, sticky="w", padx=6
-        )
-        ttk.Label(grid, text="(blank = auto)", foreground="#888").grid(
-            row=0, column=4, sticky="w"
+        ttk.Label(grid, text=MODEL_HINT, foreground="#888", wraplength=560).grid(
+            row=2, column=0, columnspan=5, sticky="w", pady=(4, 0)
         )
 
         self.timestamps_var = tk.BooleanVar(value=False)
         ttk.Checkbutton(
             grid, text="Include timestamps", variable=self.timestamps_var
         ).grid(row=1, column=0, columnspan=2, sticky="w", pady=(6, 0))
+
+        self.translate_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(
+            grid,
+            text="Also save an English translation (…_english.txt)",
+            variable=self.translate_var,
+        ).grid(row=1, column=2, columnspan=3, sticky="w", pady=(6, 0))
 
         outrow = ttk.Frame(opts)
         outrow.pack(fill="x", **pad)
@@ -250,33 +333,65 @@ class TranscriptiqApp:
             messagebox.showinfo("Transcriptiq", "Please add at least one audio file.")
             return
 
+        model = self.model_var.get()
+        language_label = self.lang_var.get()
+        options = language_kwargs(language_label)
+        if is_english_only_model(model) and options.get("language") not in (None, "en"):
+            from tkinter import messagebox
+
+            messagebox.showwarning(
+                "Transcriptiq",
+                f"'{model}' is an English-only model and cannot transcribe Hindi.\n"
+                "Choose 'small' or 'medium' instead.",
+            )
+            return
+
         self.run_btn.config(state="disabled")
         self.progress.config(value=0, maximum=len(self._inputs))
         files = list(self._inputs)
-        model = self.model_var.get()
-        language = self.lang_var.get().strip() or None
         with_timestamps = self.timestamps_var.get()
+        also_translate = self.translate_var.get() and options.get("task") != "translate"
         output_dir = self._output_dir
 
         self._worker = threading.Thread(
             target=self._run_job,
-            args=(files, model, language, with_timestamps, output_dir),
+            args=(
+                files,
+                model,
+                language_label,
+                options,
+                with_timestamps,
+                also_translate,
+                output_dir,
+            ),
             daemon=True,
         )
         self._worker.start()
 
-    def _run_job(self, files, model, language, with_timestamps, output_dir) -> None:
+    def _run_job(
+        self,
+        files,
+        model,
+        language_label,
+        options,
+        with_timestamps,
+        also_translate,
+        output_dir,
+    ) -> None:
         try:
-            self._post("log", f"Loading model '{model}'… (first use may download)")
+            self._post(
+                "log",
+                f"Loading model '{model}' · {language_label}… (first use may download)",
+            )
             transcriber = Transcriber(
                 model=model,
                 device="auto",
-                download_root=bundled_models_dir(),
+                download_root=model_download_root(model),
                 verbose=False,
             )
             for index, audio in enumerate(files, start=1):
                 self._post("log", f"[{index}/{len(files)}] Transcribing {audio.name}…")
-                result = transcriber.transcribe_file(audio, language=language)
+                result = transcriber.transcribe_file(audio, **options)
                 target = (
                     output_dir / (audio.stem + "_transcribed.txt")
                     if output_dir is not None
@@ -286,7 +401,31 @@ class TranscriptiqApp:
                     output_dir.mkdir(parents=True, exist_ok=True)
                 written = result.save(target, with_timestamps=with_timestamps)
                 secs = result.processing_seconds or 0.0
-                self._post("log", f"    ✓ {secs:.1f}s → {written}")
+                lang = f" [{result.language}]" if result.language else ""
+                self._post("log", f"    ✓ {secs:.1f}s{lang} → {written}")
+                if also_translate and result.language != "en":
+                    if not can_translate(model):
+                        self._post(
+                            "log",
+                            f"    (skipped translation: '{model}' cannot translate;"
+                            " use small or medium)",
+                        )
+                    else:
+                        self._post("log", "    Translating to English…")
+                        english = transcriber.transcribe_file(
+                            audio, language=result.language, task="translate"
+                        )
+                        stem = audio.stem + "_english.txt"
+                        en_target = (
+                            output_dir / stem
+                            if output_dir is not None
+                            else audio.with_name(stem)
+                        )
+                        en_written = english.save(
+                            en_target, with_timestamps=with_timestamps
+                        )
+                        esecs = english.processing_seconds or 0.0
+                        self._post("log", f"    ✓ {esecs:.1f}s [en] → {en_written}")
                 self._post("progress", index)
             self._post("log", "Done.")
             self._post("done", f"Transcribed {len(files)} file(s).")

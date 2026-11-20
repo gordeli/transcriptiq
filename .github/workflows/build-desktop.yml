@@ -1,7 +1,8 @@
 name: Build desktop installers
 
 # Build standalone desktop apps for Windows and macOS. Each build bundles a
-# standalone ffmpeg and the base.en Whisper model, so the app works offline.
+# standalone ffmpeg and the multilingual "small" Whisper model (English, Hindi
+# and Hindi-English mixes), so the app works offline.
 #
 # Trigger manually (Actions tab -> Run workflow) or by pushing a v* tag, which
 # also attaches the installers to a GitHub Release.
@@ -49,8 +50,8 @@ jobs:
           import os, shutil, whisper, imageio_ffmpeg
           os.makedirs("build_assets/models", exist_ok=True)
           os.makedirs("build_assets/bin", exist_ok=True)
-          # Download the bundled model directly into the assets folder.
-          whisper.load_model("base.en", download_root="build_assets/models")
+          # Download the bundled multilingual model into the assets folder.
+          whisper.load_model("small", download_root="build_assets/models")
           # Use imageio-ffmpeg's bundled static ffmpeg (cross-platform, incl.
           # macOS arm64). Copy it in under the plain name Whisper expects.
           src = imageio_ffmpeg.get_ffmpeg_exe()
